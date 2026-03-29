@@ -31,14 +31,16 @@ class PDF(FPDF):
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
 def generate_pdf(content, niche):
-    pdf = PDF()
+    pdf = FPDF()
     pdf.add_page()
-    pdf.set_font('Arial', size=12)
-    lines = content.split('\n')
-    for line in lines:
-        pdf.multi_cell(0, 8, line.encode('latin-1', 'replace').decode('latin-1'))
-        if pdf.get_y() > 270:
-            pdf.add_page()
+    pdf.set_font('Helvetica', size=11)
+    pdf.set_margins(15, 15, 15)
+    pdf.set_auto_page_break(auto=True, margin=15)
+    for line in content.split('\n'):
+        if line.strip() == '':
+            pdf.ln(4)
+        else:
+            pdf.multi_cell(0, 7, line.strip())
     filename = f"blueprint_{niche.replace(' ', '_')}.pdf"
     pdf.output(filename)
     return filename
