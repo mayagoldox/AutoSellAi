@@ -40,7 +40,7 @@ def generate_pdf(content, niche):
         if line.strip() == '':
             pdf.ln(4)
         else:
-            pdf.multi_cell(0, 7, line.strip())
+            pdf.multi_cell(0, 7, line.strip().encode('latin-1', 'replace').decode('latin-1'))
     filename = f"blueprint_{niche.replace(' ', '_')}.pdf"
     pdf.output(filename)
     return filename
