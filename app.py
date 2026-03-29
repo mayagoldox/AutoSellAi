@@ -111,7 +111,7 @@ def webhook():
         try:
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[{"role": "user", "content": f"Generate a detailed, professional, 3000+ word e-book titled AI Money-Making Blueprint for the {niche} niche. Structure: Introduction, 5 Proven Strategies, Must-Have AI Tools, Real Case Studies, Step-by-Step 30-Day Action Plan, Common Mistakes and How to Avoid Them, Conclusion. Make it actionable, exciting, and ready to implement immediately."}]
+                messages=[{"role": "user", "content": f"Generate a 500 word e-book titled AI Money-Making Blueprint for the {niche} niche. Include: Introduction, 3 Strategies, Key Tools, Action Plan. Be concise and actionable."
             )
             content = response.choices[0].message.content
             pdf_path = generate_pdf(content, niche)
