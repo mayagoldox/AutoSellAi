@@ -70,8 +70,8 @@ def home():
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     data = request.get_json()
-    niche = data.get('niche')
-    customer_email = data.get('customer_email')
+    niche = session['metadata']['niche']
+    customer_email = session['metadata']['customer_email']
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
