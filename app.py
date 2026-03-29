@@ -70,8 +70,9 @@ def home():
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     data = request.get_json()
-    niche = session['metadata']['niche']
-    customer_email = session['metadata']['customer_email']
+    niche = data.get('niche')
+    customer_email = data.get('customer_email')
+    
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -104,8 +105,9 @@ def webhook():
         return jsonify({'error': str(e)}), 400
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        niche = session['metadata'].get('niche')
-        customer_email = session['metadata'].get('customer_email')
+        niche = session['metadata']['niche']
+        customer_email = session['metadata']['customer_email']
+        
         try:
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
