@@ -1,6 +1,6 @@
 flask
 stripe
 openai
-fpdf2
 python-dotenv
 gunicorn
+sendgrid
