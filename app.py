@@ -117,7 +117,18 @@ def webhook():
             )
             content = response.choices[0].message.content
             pdf_path = generate_pdf(content, niche)
-            send_email(customer_email, pdf_path, niche)
+            def send_email(to_email, content, niche):
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_USER
+    msg['To'] = to_email
+    msg['Subject'] = f"Your Custom AI Blueprint for {niche} is Ready!"
+    body = f"Thank you for your purchase!\n\nHere is your personalized AI Money-Making Blueprint for {niche}:\n\n{content}\n\n- AutoSellAI Team"
+    msg.attach(MIMEText(body, 'plain'))
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(EMAIL_USER, EMAIL_PASS)
+    server.send_message(msg)
+    server.quit()
         except Exception as e:
             print("Generation error:", e)
     return jsonify({'status': 'success'}), 200
