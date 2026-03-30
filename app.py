@@ -1,7 +1,6 @@
 import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import sendgrid
+from sendgrid.helpers.mail import Mail
 from flask import Flask, request, jsonify
 import stripe
 from openai import OpenAI
@@ -13,22 +12,19 @@ app = Flask(__name__)
 
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 EMAIL_USER = os.getenv('EMAIL_USER')
-EMAIL_PASS = os.getenv('EMAIL_PASS')
 WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
 
 def send_email(to_email, content, niche):
-    msg = MIMEMultipart()
-    msg['From'] = EMAIL_USER
-    msg['To'] = to_email
-    msg['Subject'] = f"Your Custom AI Blueprint for {niche} is Ready!"
-    body = f"Thank you for your purchase!\n\nHere is your personalized AI Money-Making Blueprint for {niche}:\n\n{content}\n\n- AutoSellAI Team"
-    msg.attach(MIMEText(body, 'plain'))
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(EMAIL_USER, EMAIL_PASS)
-    server.send_message(msg)
-    server.quit()
+    sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
+    message = Mail(
+        from_email=EMAIL_USER,
+        to_emails=to_email,
+        subject=f"Your Custom AI Blueprint for {niche} is Ready!",
+        plain_text_content=f"Thank you for your purchase!\n\nHere is your personalized AI Money-Making Blueprint for {niche}:\n\n{content}\n\n- AutoSellAI Team"
+    )
+    sg.send(message)
 
 @app.route('/')
 def home():
@@ -86,3 +82,15 @@ def webhook():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+```
+
+4. Click **"Commit changes"** twice
+
+Also update **requirements.txt** on GitHub — click it, edit it, and replace everything with:
+```
+flask
+stripe
+openai
+python-dotenv
+gunicorn
+sendgrid
