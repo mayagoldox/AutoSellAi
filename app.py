@@ -2,12 +2,9 @@ import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
 from flask import Flask, request, jsonify
 import stripe
 from openai import OpenAI
-from fpdf import FPDF
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,50 +17,18 @@ EMAIL_USER = os.getenv('EMAIL_USER')
 EMAIL_PASS = os.getenv('EMAIL_PASS')
 WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
 
-class PDF(FPDF):
-    def header(self):
-        self.set_font('Arial', 'B', 14)
-        self.cell(0, 10, 'Your Custom AI Money-Making Blueprint', 0, 1, 'C')
-        self.ln(10)
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
-        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
-
-def generate_pdf(content, niche):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font('Helvetica', size=11)
-    pdf.set_margins(15, 15, 15)
-    pdf.set_auto_page_break(auto=True, margin=15)
-    for line in content.split('\n'):
-        if line.strip() == '':
-            pdf.ln(4)
-        else:
-            pdf.multi_cell(0, 7, line.strip().encode('latin-1', 'replace').decode('latin-1'))
-    filename = f"blueprint_{niche.replace(' ', '_')}.pdf"
-    pdf.output(filename)
-    return filename
-
-def send_email(to_email, pdf_path, niche):
+def send_email(to_email, content, niche):
     msg = MIMEMultipart()
     msg['From'] = EMAIL_USER
     msg['To'] = to_email
     msg['Subject'] = f"Your Custom AI Blueprint for {niche} is Ready!"
-    body = "Thank you for your purchase!\n\nYour personalized AI Money-Making Blueprint is attached.\n\nStart implementing today and watch your income grow!\n\n- AutoSellAI Team"
+    body = f"Thank you for your purchase!\n\nHere is your personalized AI Money-Making Blueprint for {niche}:\n\n{content}\n\n- AutoSellAI Team"
     msg.attach(MIMEText(body, 'plain'))
-    with open(pdf_path, "rb") as attachment:
-        part = MIMEBase('application', 'octet-stream')
-        part.set_payload(attachment.read())
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f"attachment; filename={os.path.basename(pdf_path)}")
-        msg.attach(part)
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
     server.login(EMAIL_USER, EMAIL_PASS)
     server.send_message(msg)
     server.quit()
-    os.remove(pdf_path)
 
 @app.route('/')
 def home():
@@ -74,15 +39,14 @@ def create_checkout_session():
     data = request.get_json()
     niche = data.get('niche')
     customer_email = data.get('customer_email')
-    
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{'price_data': {'currency': 'usd', 'product_data': {'name': f'Custom AI Blueprint - {niche}'}, 'unit_amount': 4700}, 'quantity': 1}],
             mode='payment',
             customer_email=customer_email,
-            success_url='http://localhost:5000/success',
-            cancel_url='http://localhost:5000/cancel',
+            success_url='https://autosellai.onrender.com/success',
+            cancel_url='https://autosellai.onrender.com/cancel',
             metadata={'niche': niche, 'customer_email': customer_email}
         )
         return jsonify({'url': session.url})
@@ -109,26 +73,13 @@ def webhook():
         session = event['data']['object']
         niche = session['metadata']['niche']
         customer_email = session['metadata']['customer_email']
-        
         try:
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[{"role": "user", "content": f"Generate a 500 word e-book titled AI Money-Making Blueprint for the {niche} niche. Include: Introduction, 3 Strategies, Key Tools, Action Plan. Be concise and actionable."}]
+                messages=[{"role": "user", "content": f"Generate a 500 word blueprint titled AI Money-Making Blueprint for the {niche} niche. Include: Introduction, 3 Strategies, Key Tools, Action Plan. Be concise and actionable."}]
             )
             content = response.choices[0].message.content
-            pdf_path = generate_pdf(content, niche)
-            def send_email(to_email, content, niche):
-    msg = MIMEMultipart()
-    msg['From'] = EMAIL_USER
-    msg['To'] = to_email
-    msg['Subject'] = f"Your Custom AI Blueprint for {niche} is Ready!"
-    body = f"Thank you for your purchase!\n\nHere is your personalized AI Money-Making Blueprint for {niche}:\n\n{content}\n\n- AutoSellAI Team"
-    msg.attach(MIMEText(body, 'plain'))
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(EMAIL_USER, EMAIL_PASS)
-    server.send_message(msg)
-    server.quit()
+            send_email(customer_email, content, niche)
         except Exception as e:
             print("Generation error:", e)
     return jsonify({'status': 'success'}), 200
