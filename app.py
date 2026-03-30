@@ -82,15 +82,3 @@ def webhook():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-```
-
-4. Click **"Commit changes"** twice
-
-Also update **requirements.txt** on GitHub — click it, edit it, and replace everything with:
-```
-flask
-stripe
-openai
-python-dotenv
-gunicorn
-sendgrid
